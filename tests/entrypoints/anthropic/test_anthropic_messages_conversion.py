@@ -1483,6 +1483,45 @@ class TestDetectMergeInlineSystem:
         )
         assert mock_logger.warning_once.called is expected
 
+    @pytest.mark.parametrize(
+        ("supports_inline_system", "expected"),
+        [(True, False), (False, True)],
+    )
+    def test_native_renderer_declares_inline_system_support(
+        self, supports_inline_system, expected
+    ):
+        """Native encoders answer for themselves instead of being probed.
+
+        DeepSeek-V4.1-Flash ships no Jinja chat template, so the probe would
+        see ``None`` and merge, even though its encoder emits ``<｜System｜>``
+        for mid-conversation system messages. Merging rewrites the prompt
+        prefix every turn and defeats the prefix cache.
+        """
+
+        class _NativeRenderer:
+            def __init__(self, supports: bool) -> None:
+                self.supports_inline_system = supports
+
+        online_renderer = SimpleNamespace(
+            renderer=_NativeRenderer(supports_inline_system),
+            chat_template=None,
+            model_config=None,
+        )
+        assert (
+            AnthropicServingMessages._should_merge_inline_system(online_renderer)
+            is expected
+        )
+
+    def test_deepseek_v41_renderer_opts_into_inline_system(self):
+        """The V4.1 encoder handles mid-conversation system messages in place."""
+        from vllm.renderers.deepseek_v4 import (
+            DeepseekV4Renderer,
+            DeepseekV41Renderer,
+        )
+
+        assert DeepseekV41Renderer.supports_inline_system is True
+        assert DeepseekV4Renderer.supports_inline_system is False
+
 
 # ======================================================================
 # Full (non-streaming) response conversion: messages_full_converter

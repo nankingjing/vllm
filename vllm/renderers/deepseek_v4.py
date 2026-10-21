@@ -99,6 +99,12 @@ class DeepseekV4Renderer(BaseRenderer[DeepseekV4Tokenizer]):
 
 
 class DeepseekV41Renderer(DeepseekV4Renderer):
+    # The V4.1 encoder emits ``<｜System｜>`` plus a generation header for any
+    # system message past index 0 (see ``deepseek_v41_encoding``), so inline
+    # system turns can be preserved in place. DeepSeek-V4.1-Flash ships no
+    # chat_template, so the Jinja probe in the Anthropic adapter cannot see it.
+    supports_inline_system = True
+
     def _apply_chat_template(self, *args, **kwargs):
         image_order: list[int] = []
         kwargs["image_order"] = image_order

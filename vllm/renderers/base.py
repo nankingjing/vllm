@@ -10,7 +10,7 @@ from contextlib import ExitStack
 from dataclasses import replace
 from functools import cached_property
 from threading import Lock
-from typing import TYPE_CHECKING, Any, Generic, overload
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, overload
 
 from typing_extensions import TypeVar
 
@@ -104,6 +104,12 @@ class _SwappableExecutor(Executor):
 
 
 class BaseRenderer(ABC, Generic[_T]):
+    #: Whether this renderer's native encoder renders mid-conversation system
+    #: messages in place. Native encoders ship no Jinja chat template for the
+    #: Anthropic Messages adapter to probe, so they must declare this instead
+    #: of letting the adapter fall back to its conservative "merge" default.
+    supports_inline_system: ClassVar[bool] = False
+
     def __init__(self, config: "VllmConfig", tokenizer: _T | None) -> None:
         super().__init__()
 
